@@ -1,9 +1,21 @@
-# DevOps Capstone Template
+# devops-capstone-project
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.9](https://img.shields.io/badge/Python-3.9-green.svg)](https://shields.io/)
 
 This repository contains the starter code for the project in [**IBM-CD0285EN-SkillsNetwork DevOps Capstone Project**](https://www.coursera.org/learn/devops-capstone-project?specialization=devops-and-software-engineering) which is part of the [**IBM DevOps and Software Engineering Professional Certificate**](https://www.coursera.org/professional-certificates/devops-and-software-engineering)
+
+## Project overview
+
+Customer Accounts is a RESTful microservice for managing customer records on an e-commerce website. The course starter supplies the account model and CREATE endpoint. The planned work adds READ, UPDATE, DELETE, and LIST endpoints with tests, then CI, security headers, containerization, Kubernetes deployment, and a Tekton CD pipeline.
+
+## Current status
+
+Sprint 0: repository and planning setup. Implementation and deployment are not yet complete. The remaining labs must be run and their actual results captured before the final submission.
+
+## Planning
+
+Seven initial user stories are tracked in this repository's Issues. The first sprint covers development setup and the four missing account operations. Containerization and Kubernetes deployment are scheduled for later sprints. Acceptance criteria use Given/When/Then; story points use 3, 5, 8, 13.
 
 ## Usage
 
