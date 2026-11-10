@@ -1,5 +1,7 @@
 # devops-capstone-project
 
+[![CI Build](https://github.com/Altusha4/devops-capstone-project/actions/workflows/ci-build.yaml/badge.svg)](https://github.com/Altusha4/devops-capstone-project/actions/workflows/ci-build.yaml)
+
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.9](https://img.shields.io/badge/Python-3.9-green.svg)](https://shields.io/)
 
@@ -11,7 +13,7 @@ Customer Accounts is a RESTful microservice for managing customer records on an 
 
 ## Current status
 
-Sprint 0: repository and planning setup. Implementation and deployment are not yet complete. The remaining labs must be run and their actual results captured before the final submission.
+Account CRUD/LIST endpoints and security tests are implemented. Local tests against PostgreSQL pass with 95% coverage. CI and deployment evidence are being verified; see docs/submission-status.md.
 
 ## Planning
 

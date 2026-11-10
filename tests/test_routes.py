@@ -12,6 +12,7 @@ from tests.factories import AccountFactory
 from service.common import status  # HTTP Status Codes
 from service.models import db, Account, init_db
 from service.routes import app
+from service import talisman
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -30,6 +31,7 @@ class TestAccountService(TestCase):
     def setUpClass(cls):
         """Run once before all tests"""
         app.config["TESTING"] = True
+        talisman.force_https = False
         app.config["DEBUG"] = False
         app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
         app.logger.setLevel(logging.CRITICAL)
@@ -123,4 +125,73 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
+    def test_read_account(self):
+        account = self._create_accounts(1)[0]
+        response = self.client.get(f"{BASE_URL}/{account.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), account.serialize())
+
+    def test_read_missing(self):
+        self.assertEqual(self.client.get(f"{BASE_URL}/999").status_code, 404)
+
+    def test_list_accounts(self):
+        self.assertEqual(self.client.get(BASE_URL).get_json(), [])
+        accounts = self._create_accounts(3)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual({a["id"] for a in response.get_json()}, {a.id for a in accounts})
+
+    def test_update_account(self):
+        account = self._create_accounts(1)[0]
+        payload = account.serialize()
+        payload["name"] = "Updated Customer"
+        response = self.client.put(f"{BASE_URL}/{account.id}", json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["name"], "Updated Customer")
+        self.assertEqual(self.client.get(f"{BASE_URL}/{account.id}").get_json()["name"], "Updated Customer")
+
+    def test_update_missing(self):
+        self.assertEqual(self.client.put(f"{BASE_URL}/999", json=AccountFactory().serialize()).status_code, 404)
+
+    def test_update_invalid(self):
+        account = self._create_accounts(1)[0]
+        self.assertEqual(self.client.put(f"{BASE_URL}/{account.id}", json={}).status_code, 400)
+        self.assertEqual(self.client.put(f"{BASE_URL}/{account.id}", data="bad", content_type="text/plain").status_code, 415)
+
+    def test_delete_account(self):
+        account = self._create_accounts(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{account.id}")
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.data, b"")
+        self.assertEqual(self.client.get(f"{BASE_URL}/{account.id}").status_code, 404)
+        self.assertEqual(self.client.delete(f"{BASE_URL}/{account.id}").status_code, 204)
+
+
+    def test_security_headers(self):
+        response = self.client.get("/health")
+        self.assertEqual(response.headers["X-Frame-Options"], "SAMEORIGIN")
+        self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+
+    def test_cors_allowed_origin(self):
+        response = self.client.get("/health", headers={"Origin": "https://example.com"})
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], "https://example.com")
+
+    def test_cors_disallowed_origin(self):
+        response = self.client.get("/health", headers={"Origin": "https://untrusted.example"})
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    def test_method_not_allowed(self):
+        response = self.client.patch(BASE_URL, json={})
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.get_json()["error"], "Method not Allowed")
+
+    def test_database_failure_returns_json_500(self):
+        from unittest.mock import patch
+        app.config["PROPAGATE_EXCEPTIONS"] = False
+        try:
+            with patch("service.routes.Account.all", side_effect=RuntimeError("Database unavailable")):
+                response = self.client.get(BASE_URL)
+            self.assertEqual(response.status_code, 500)
+            self.assertEqual(response.get_json()["error"], "Internal Server Error")
+        finally:
+            app.config["PROPAGATE_EXCEPTIONS"] = None
