@@ -15,6 +15,8 @@ Sprint 0: repository and planning setup. Implementation and deployment are not y
 
 ## Planning
 
+[Kanban board](https://github.com/users/Altusha4/projects/2) · [User stories](https://github.com/Altusha4/devops-capstone-project/issues) · [Sprint milestones](https://github.com/Altusha4/devops-capstone-project/milestones)
+
 Seven initial user stories are tracked in this repository's Issues. The first sprint covers development setup and the four missing account operations. Containerization and Kubernetes deployment are scheduled for later sprints. Acceptance criteria use Given/When/Then; story points use 3, 5, 8, 13.
 
 ## Usage
