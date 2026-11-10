@@ -1,22 +1,14 @@
-# Submission status
+# Submission status — 2026-11-10
 
-## Planning prepared
-- Public repository generated from the official IBM template (not a fork).
-- README describes the Customer Accounts service and remaining work.
-- User story template: `.github/ISSUE_TEMPLATE/user-story.md`.
-- Seven issues have roles, goals, benefits, assumptions, Given/When/Then acceptance criteria, and story-point estimates.
-- Yellow `technical debt` label is applied to environment, Docker, and Kubernetes tasks.
-- GitHub Projects board contains seven status columns.
-- Five issues are in Sprint Backlog, assigned to the Sprint 1 milestone.
-- Docker and Kubernetes issues are in Icebox, assigned to Sprint 2 and Sprint 3 milestones.
-- Sprint planning uses one-week milestones; these are planning dates, not evidence of actual work performed or a promise to meet university deadlines.
-
-## Still required
-- Complete and run READ, UPDATE, DELETE, and LIST endpoint tests and implementation.
-- Verify at least 95% test coverage in the required environment.
-- Implement and run CI, security, Docker, Kubernetes, and Tekton labs.
-- Capture genuine screenshots and logs from successful executions.
-- Review planning screenshots against each submission rubric; confirm all required details are readable.
-- Submit coursework only after reviewing the actual completed work.
-
-No deployed application, passing test run, CI run, or completed laboratory is claimed by this planning setup.
+- Customer Accounts REST API implements create, read, update, delete and list.
+- Local PostgreSQL test run passed with 95% coverage. Red-phase test output is retained locally.
+- GitHub CI passed: https://github.com/Altusha4/devops-capstone-project/actions/runs/42820718905
+- Security headers and restricted CORS are covered by tests.
+- Docker image runs as a non-root user.
+- Actual local Kubernetes deployment is in the isolated `devops-capstone` namespace of Minikube, backed by PostgreSQL.
+- Tekton PipelineRun `accounts-cd-9hwqj` succeeded: clone, lint/test, Kaniko build/push and deployment rollout. Pipeline tests use SQLite; local and GitHub CI tests use PostgreSQL.
+- `tekton/local-pipeline.yaml` is the executable local pipeline. `deploy/registry.yaml` supplies an isolated laboratory registry. HTTP and disabled HTTPS redirects are for this local lab only, not a production configuration.
+- Evidence files are local and excluded from Git. No credentials are committed.
+- Story points are displayed as `[SP: n]` in issue titles and described in issue bodies.
+- Planning screenshots show the exercise board; the labels/backlog arrangement was recaptured for documentation after implementation. Milestone dates are planning exercise dates, not elapsed work durations.
+- Final assessment is prepared as a draft for learner review; no score or certificate is claimed.

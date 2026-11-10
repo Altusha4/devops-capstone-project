@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipeline-deployer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipeline-deployer
+rules:
+  - apiGroups: ['apps']
+    resources: ['deployments']
+    resourceNames: ['accounts']
+    verbs: ['get','patch','watch']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipeline-deployer
+subjects:
+  - kind: ServiceAccount
+    name: pipeline-deployer
+roleRef:
+  kind: Role
+  name: pipeline-deployer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: accounts-local-cd
+spec:
+  params:
+    - name: repo-url
+    - name: branch
+      default: main
+    - name: build-image
+    - name: app-name
+      default: accounts
+  workspaces:
+    - name: source
+  tasks:
+    - name: clone
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: branch
+          value: $(params.branch)
+      workspaces:
+        - name: source
+          workspace: source
+      taskSpec:
+        params:
+          - name: repo-url
+          - name: branch
+        workspaces:
+          - name: source
+        steps:
+          - name: checkout
+            image: alpine/git:2.47.2
+            script: |
+              #!/bin/sh
+              set -eu
+              git clone --branch "$(params.branch)" --depth 1 "$(params.repo-url)" "$(workspaces.source.path)/repo"
+              cd "$(workspaces.source.path)/repo"
+              git rev-parse HEAD
+    - name: lint-and-test
+      runAfter: [clone]
+      workspaces:
+        - name: source
+          workspace: source
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: validate
+            image: python:3.9-slim
+            workingDir: $(workspaces.source.path)/repo
+            env:
+              - name: DATABASE_URI
+                value: sqlite://
+              - name: FORCE_HTTPS
+                value: 'false'
+            script: |
+              #!/bin/sh
+              set -eu
+              pip install --quiet -r requirements.txt
+              flake8 service tests --count --select=E9,F63,F7,F82 --show-source --statistics
+              nosetests
+              coverage report -m
+    - name: build
+      runAfter: [lint-and-test]
+      params:
+        - name: build-image
+          value: $(params.build-image)
+      workspaces:
+        - name: source
+          workspace: source
+      taskSpec:
+        params:
+          - name: build-image
+        workspaces:
+          - name: source
+        steps:
+          - name: build-and-push
+            image: gcr.io/kaniko-project/executor:v1.23.2
+            args:
+              - --context=$(workspaces.source.path)/repo
+              - --dockerfile=$(workspaces.source.path)/repo/Dockerfile
+              - --destination=$(params.build-image)
+              - --insecure
+              - --cache=false
+    - name: deploy
+      runAfter: [build]
+      params:
+        - name: build-image
+          value: $(params.build-image)
+        - name: app-name
+          value: $(params.app-name)
+      taskSpec:
+        params:
+          - name: build-image
+          - name: app-name
+        steps:
+          - name: update-image
+            image: registry.k8s.io/kubectl:v1.35.1
+            command: [kubectl]
+            args: [set, image, deployment/$(params.app-name), accounts=$(params.build-image)]
+          - name: rollout
+            image: registry.k8s.io/kubectl:v1.35.1
+            command: [kubectl]
+            args: [rollout, status, deployment/$(params.app-name), --timeout=180s]
+          - name: verify
+            image: registry.k8s.io/kubectl:v1.35.1
+            command: [kubectl]
+            args: [get, deployment/$(params.app-name), -o, wide]
